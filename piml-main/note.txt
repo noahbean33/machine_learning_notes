@@ -1,0 +1,33 @@
+Transplanting one of your electromagnetic (EM) simulations (like the 1D FDTD solver) into the PINN (Physics-Informed Neural Network) framework of your Burgers notebook is **moderately difficult** but highly systematic.
+
+Since your Burgers notebook already provides a working template for solving PDEs with PyTorch, the "transplant" involves replacing the single-variable fluid dynamics logic with the multi-variable vector field logic of Maxwell's equations.
+
+### **Key Steps for the Transplant**
+
+#### **1. Update the Neural Network Architecture**
+In your Burgers notebook, the network `NN` ends with `nn.Linear(20, 1)`, predicting a single scalar $u(x, t)$.
+* **For the EM simulation (`FDTD.py`):** You need to predict at least two fields, $E_x$ and $H_y$. You would change the output layer to `nn.Linear(20, 2)`.
+* **For Circular Polarization (`EMcirc.py`):** You would need 4 outputs ($E_x, E_y, H_x, H_y$).
+
+#### **2. Redefine the Physics (PDE) Loss**
+This is the most critical change. You will replace the Burgers equation residual with the residuals of Maxwell’s Equations in 1D.
+* **Current Burgers Residual:** `loss_pde = criterion(du_dt + u*du_dx, nu*du_dxx)`.
+* **New Maxwell Residuals:** You will need to calculate two residuals (Faraday's Law and Ampere's Law):
+    1.  $Res_{E} = \frac{\partial E_x}{\partial t} + \frac{1}{\epsilon} \frac{\partial H_y}{\partial z}$
+    2.  $Res_{H} = \frac{\partial H_y}{\partial t} + \frac{1}{\mu} \frac{\partial E_x}{\partial z}$
+    The total `loss_pde` becomes the MSE of both residuals being zero.
+
+#### **3. Adapt Boundary and Initial Conditions**
+Your EM scripts use specific initial conditions (like sine waves in `FDTD.py` or cosine waves in `EMcirc.py`) and periodic boundary conditions.
+* **Initial Conditions:** Update the `y_ic` logic in your `Net` class to match the waveforms in your `.py` files.
+* **Boundary Conditions:** If you want to keep the periodic BCs from `FDTD.py`, you'll need to add a term to the loss function that ensures `model(x_min, t) == model(x_max, t)`.
+
+### **Difficulty Assessment**
+| Component | Difficulty | Reason |
+| :--- | :--- | :--- |
+| **Code Structure** | **Low** | You can keep 90% of the `Net` class structure (optimizer, training loop, grid generation). |
+| **PDE Formulation** | **Medium** | Handling coupled PDEs (E and H together) requires careful indexing of the network's multi-output tensor. |
+| **Convergence** | **Medium** | EM waves are oscillatory; PINNs sometimes struggle with high-frequency oscillations compared to the smoother "shock" solutions in Burgers equations. |
+
+### **Recommendation**
+Start with `FDTD.py` as it is the simplest (2 variables). Once you have $E_x$ and $H_y$ oscillating correctly in the PINN, expanding to the 4-variable `EMcirc.py` is just a matter of adding more output neurons and PDE terms.

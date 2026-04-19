@@ -1,0 +1,18 @@
+# Core scientific computing libraries
+numpy>=1.21.0
+matplotlib>=3.4.0
+seaborn>=0.11.0
+
+# PyTorch (for PINN implementations)
+# Visit pytorch.org for installation instructions specific to your system
+# Example for CPU: pip install torch
+# Example for CUDA: pip install torch --index-url https://download.pytorch.org/whl/cu118
+torch>=2.0.0
+
+# DeepXDE and TensorFlow (for DeepXDE implementations)
+deepxde>=1.9.0
+tensorflow>=2.10.0
+
+# Optional: For Jupyter notebook support (if needed in future)
+# jupyter>=1.0.0
+# ipython>=8.0.0
